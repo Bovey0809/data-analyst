@@ -1,4 +1,9 @@
-TITLE by YOUR_NAME_HERE
+---
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+TITLE by HOUBOWEI
 ========================================================
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, packages}
@@ -10,89 +15,147 @@ TITLE by YOUR_NAME_HERE
 # You should set echo=FALSE for all code chunks in your file.
 
 library(ggplot2)
+library(grid)
+library(gridExtra)
+library(readxl)
+library(tidyr)
+library(dplyr)
+library(lubridate)
 ```
 
 ```{r echo=FALSE, Load_the_Data}
 # Load the Data
-
+population <- read_excel(path = "indicator gapminder population.xlsx",col_names = TRUE)
 ```
 
-# Univariate Plots Section
+# wrangle data
 ```{r echo=FALSE, Univariate_Plots}
-
+population_clean <- population %>% gather("year", "populatin", -1)
+```
+```{r}
+head(population_clean)
+```
+```{r}
+# change year datatype into date type.
+strsplit(x = population_clean$year, ".", fixed = TRUE)[[1]][[1]]
+```
+# 
+```{r}
+population_clean$year <- population_clean$year %>% as.numeric()
 ```
 
-# Univariate Analysis
-
-### What is the structure of your dataset?
-
-### What is/are the main feature(s) of interest in your dataset?
-
-### What other features in the dataset do you think will help support your investigation into your feature(s) of interest?
-
-### Did you create any new variables from existing variables in the dataset?
-
-### Of the features you investigated, were there any unusual distributions? Did you perform any operations on the data to tidy, adjust, or change the form of the data? If so, why did you do this?
-
-
-
-# Bivariate Plots Section
-```{r echo=FALSE, Bivariate_Plots}
-
+```{r}
+population_clean %>% head()
+```
+```{r}
+summary(population_clean)
 ```
 
-# Bivariate Analysis
-
-### Talk about some of the relationships you observed in this part of the investigation. How did the feature(s) of interest vary with other features in the dataset?
-
-### Did you observe any interesting relationships between the other features (not the main feature(s) of interest)?
-
-### What was the strongest relationship you found?
-
-
-
-
-# Multivariate Plots Section
-
-```{r echo=FALSE, Multivariate_Plots}
-
+```{r}
+# group by year
+p1 <- population_clean %>% subset(!is.na(populatin)) %>%  group_by(year) %>% summarise(sum = sum(populatin))
+qplot(x=year,y=sum,data=p1)
+```
+# facebook birthday
+```{r}
+birthdaysExample <- read.csv("eda-course-materials/lesson3/birthdaysExample.csv")
+birthdaysExample$dates <-as.Date(birthdaysExample$dates,format = "%m/%d/%y")
 ```
 
-# Multivariate Analysis
-
-### Talk about some of the relationships you observed in this part of the investigation. Were there features that strengthened each other in terms of looking at your feature(s) of interest?
-
-### Were there any interesting or surprising interactions between features?
-
-### OPTIONAL: Did you create any models with your dataset? Discuss the strengths and limitations of your model.
-
-------
-
-# Final Plots and Summary
-
-### Plot One
-```{r echo=FALSE, Plot_One}
-
+```{r}
+birthdaysExample <- birthdaysExample %>% separate(dates, c("year", "month", "day"), "-")
 ```
 
-### Description One
-
-
-### Plot Two
-```{r echo=FALSE, Plot_Two}
-
+```{r}
+month_count <- birthdaysExample %>% filter(!is.na(month)) %>% group_by(month) %>% summarise(n =n()) 
 ```
 
-### Description Two
-
-
-### Plot Three
-```{r echo=FALSE, Plot_Three}
-
+```{r}
+qplot(x = n,data = month_count)
 ```
 
-### Description Three
+```{r}
+qplot(x=month, data = birthdaysExample)
+```
+March has most people.
+```{r}
+qplot(day, data = birthdaysExample)
+birthdaysExample_clean <- birthdaysExample %>% separate(date, c("year", "month", "day"), sep = "-")
+birthdaysExample_clean %>% group_by(month) %>% summarise(n())
+```
+14 is the most day.
+```{r}
+names(birthdaysExample)
+```
 
-------
+```{r}
+birthdaysExample
+birthdaysExample <- unite(birthdaysExample, "date", c(year, month, day), sep = "-")
+qplot(x =date, data =birthdaysExample)
+```
 
-# Reflection
+```{r}
+names(birthdaysExample)
+birthdaysExample %>% group_by(date) %>% summarise(n = n()) %>% arrange(desc(n))
+```
+```{r}
+birthdaysExample %>% summarise(n())
+```
+```{r}
+birthdaysExample %>% group_by(date) %>% summarise(n()) %>% summary()
+```
+
+# Lesson 5 
+Continue digging out the data of population and use the techniques in lesson 5.
+```{r summary data}
+population_clean %>% summary()
+```
+## Change the name of Total to city
+```{r}
+population_clean <- population_clean %>% rename("population" = 'populatin')
+```
+## Group population by city
+```{r}
+population_group_by_city <- population_clean %>% 
+  group_by(country) %>% 
+  summarise(max_population = max(population),
+            min_population = min(population),
+            mean_population = mean(population),
+            median_population = median(population),
+            n = n()) %>% 
+  arrange(max_population)
+population_group_by_city <- 
+  population_group_by_city %>% 
+  mutate(change = max_population - min_population,
+         change_by_percent = change / min_population) %>% 
+  arrange(desc(change))
+population_group_by_city %>% head()
+population_group_by_city %>% arrange(desc(change_by_percent))
+```
+1. The most big change in population is happend in India and China.
+2. The most big change compared to history is Hong Kong, China, which is 363 times bigger than before.
+### Max versus Population 
+```{r india's population changes by year}
+p1 <- ggplot(aes(year, population/1e+8), data = subset(population_clean, country == 'India'))+
+  geom_point()+
+  ylab("India")+
+  geom_smooth()
+
+```
+```{r Hong Kong's population changes by year}
+p2 <- ggplot(aes(year, population/1e+8), data = subset(population_clean, country == 'Hong Kong, China'))+
+  ylab("Hong Kong") + 
+  geom_point()+
+  geom_smooth()
+```
+```{r China}
+p3 <- ggplot(aes(year, population/1e+8), data = subset(population_clean,  country == "China"))+
+  ylab("China")+
+  geom_point()+
+  geom_smooth()
+```
+```{r combine three images}
+grid.arrange(p1, p2, p3)
+```
+It is obvious that, China and Hong Kong's increasing speed is slower down.
+But India is still increasing fast.

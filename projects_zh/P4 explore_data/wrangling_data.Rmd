@@ -1,0 +1,208 @@
+---
+title: "利用R做数据清洗"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
+
+```{r}
+plot(cars)
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Cmd+Option+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Cmd+Shift+K* to preview the HTML file). 
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+
+# Ground rules
+1. tbl is a better visulizaion tool than dataframe.
+2. View() is a function to extract data in a readable way.
+```{r tbl}
+View(iris)
+```
+3. The pipe opeator
+```{r}
+library(dplyr)
+tb %>% select(child:elderly)
+```
+# Goals of data wrangling
+1. make data suitable to use with particular pirce of softwasre
+2. reveal information
+
+# Dataset used in the tutorial
+```{r}
+library(EDAWR)
+?pollution
+?cases # TB cases in different countries.
+?tb # dataset with tb diseases.
+View(tb)
+storms$storm
+storms$wind
+storms
+cases$country
+names(cases)[-1] # select except first one.
+unlist(cases[1:3, 2:4])
+cases[1:3] # select rows
+cases[1:3]
+```
+# tidy data
+1. each variable is saved in its own column.
+2. each observation is saved in its own row.
+3. each type of observation stored in a single table.
+# tidyr
+## two main functions
+gather()
+spread()
+```{r}
+library(tidyr)
+?gather
+gather(cases, "year", "n", 2:4) # key,value, 
+```
+```{r}
+cases
+```
+
+```{r}
+spread(pollution, size, amount)
+```
+
+```{r}
+pollution
+```
+
+## spread(data, key, value)
+1. each unique value in the key column becomes a column name
+2. each value in value column becaomes a cell in the new columns.
+
+## gather(data, new key, new value, indexes to collapse.)
+## unite and separate
+```{r}
+separate(storms, date, c("y", "m", "d"), sep = "-")
+```
+
+```{r}
+unite(storms, "wp", wind, pressure, sep = "-")
+```
+
+# tidyr
+1. observation -> variables gather
+2. varaible -> observations spread
+3. split seperate
+4. merge unite
+
+# dplyr
+```{r}
+library(dplyr)
+?select
+?filter
+?arrange
+?mutate
+?summarise
+?group_by
+```
+
+```{r}
+library(nycflights13)
+?airlines
+?airports
+?flights
+```
+
+# ways to access information
+1. extract existing variables.
+2. extract existing observations.
+3. derive new variables?
+4. change the unit of analysis.
+
+```{r access variables}
+select(storms, storm, pressure)
+```
+```{r slect using minus mark}
+select(storms, -storm)
+select(storms, wind:date)
+```
+
+```{r}
+filter(storms, wind>=50)
+```
+
+```{r}
+filter(storms, wind>=50,
+       storm %in% c("Alex", "Ana", "Allison"))
+```
+
+```{r}
+mutate(storms, ratio = pressure / wind)
+```
+
+```{r}
+mutate(storms, ratio = pressure / wind, inverse = ratio^-1)
+```
+
+```{r}
+summarise(pollution, median(amount), variance = var(amount))
+```
+```{r}
+pollution %>% summarise(mean(amount), sum(amount), n())
+```
+
+```{r}
+arrange(storms, wind)
+```
+
+```{r}
+arrange(storms, desc(wind))
+```
+
+```{r}
+arrange(storms, wind, date)
+```
+
+```{r}
+tb %>% select(child:elderly)
+```
+
+```{r}
+select(storms, storm, pressure)
+storms %>% select(storm, pressure)
+```
+
+```{r}
+storms %>% filter(wind>=50) %>% select(storm, pressure)
+```
+
+```{r}
+# short cut for %>% cmd shift M
+storms %>% 
+  mutate(ratio = pressure / wind) %>% 
+  select(storm, ratio)
+```
+
+```{r}
+pollution %>% group_by(city)
+```
+```{r}
+pollution %>% group_by(city) %>% 
+  summarise(mean(amount), sum(amount), n())
+```
+
+```{r}
+pollution %>% group_by(city) %>% summarise(mean(amount))
+```
+
+```{r}
+pollution %>% ungroup()
+```
+# join data
+
+# best format for analysis
+1. variables in columns
+2. obsevations in rows
+3. seperatet all variables implied by law, formula or goal
+4. unit of analysis matches the unit of analysis implied by law, formula, or goal.
+5. single table.
+
+
